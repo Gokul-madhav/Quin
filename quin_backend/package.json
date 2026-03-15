@@ -1,0 +1,19 @@
+{
+  "name": "quin-backend",
+  "version": "1.0.0",
+  "description": "Quin backend APIs - Agora voice calls, QR code generation, web-to-mobile routing",
+  "type": "module",
+  "scripts": {
+    "dev": "vercel dev",
+    "deploy": "vercel",
+    "test": "echo \"No tests specified\""
+  },
+  "dependencies": {
+    "agora-access-token": "^2.0.4",
+    "qrcode": "^1.5.4",
+    "uuid": "^11.0.3"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
