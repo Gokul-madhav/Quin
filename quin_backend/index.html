@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quin — Backend</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,400&family=Inter:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    :root {
+      --bg: #0d0d0f;
+      --surface: #161618;
+      --border: #2a2a2e;
+      --gold: #c9a962;
+      --gold-muted: #8b7355;
+      --text: #f5f5f5;
+      --text-muted: #9e9e9e;
+    }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+    .container {
+      max-width: 480px;
+      width: 100%;
+      text-align: center;
+    }
+    h1 {
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 300;
+      font-size: 2.75rem;
+      letter-spacing: 0.25em;
+      color: var(--text);
+      margin-bottom: 0.5rem;
+    }
+    .tagline {
+      font-size: 0.8rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 2.5rem;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem 1.75rem;
+      margin-bottom: 1rem;
+      text-align: left;
+    }
+    .card h2 {
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 400;
+      font-size: 1.1rem;
+      color: var(--gold);
+      margin-bottom: 0.75rem;
+      letter-spacing: 0.05em;
+    }
+    .card p {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+    .card a {
+      color: var(--gold);
+      text-decoration: none;
+      font-size: 0.875rem;
+    }
+    .card a:hover {
+      text-decoration: underline;
+    }
+    .endpoints {
+      list-style: none;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+    .endpoints li {
+      padding: 0.35rem 0;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+    .endpoints li:last-child {
+      border-bottom: none;
+    }
+    .method {
+      color: var(--gold-muted);
+      font-weight: 500;
+      min-width: 3rem;
+    }
+    .path {
+      word-break: break-all;
+      text-align: right;
+    }
+    .btn {
+      display: inline-block;
+      margin-top: 1rem;
+      padding: 0.75rem 1.5rem;
+      background: var(--gold);
+      color: var(--bg);
+      font-size: 0.8rem;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: opacity 0.2s;
+    }
+    .btn:hover {
+      opacity: 0.9;
+    }
+    .status {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 2rem;
+    }
+    .status span {
+      color: var(--gold-muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Quin</h1>
+    <p class="tagline">Backend API</p>
+
+    <div class="card">
+      <h2>About</h2>
+      <p>Node.js + Express APIs for Agora voice calls, QR code generation, and web-to-mobile call routing. Deployed on Vercel.</p>
+    </div>
+
+    <div class="card">
+      <h2>API Endpoints</h2>
+      <ul class="endpoints">
+        <li><span class="method">GET</span> <span class="path">/api/health</span></li>
+        <li><span class="method">POST</span> <span class="path">/api/agora/token</span></li>
+        <li><span class="method">POST</span> <span class="path">/api/agora/call/create</span></li>
+        <li><span class="method">POST</span> <span class="path">/api/agora/call/join</span></li>
+        <li><span class="method">POST</span> <span class="path">/api/qrcode/generate</span></li>
+        <li><span class="method">POST</span> <span class="path">/api/call/create-with-qr</span></li>
+        <li><span class="method">POST</span> <span class="path">/api/call/join-by-code</span></li>
+      </ul>
+      <a href="/api/health" class="btn">Check API health</a>
+    </div>
+
+    <p class="status" id="status">—</p>
+  </div>
+
+  <script>
+    fetch('/api/health')
+      .then(r => r.json())
+      .then(data => {
+        document.getElementById('status').innerHTML =
+          'API status: <span>' + (data.status || 'ok') + '</span> · ' +
+          (data.service || 'quin-backend') + ' v' + (data.version || '1.0.0');
+      })
+      .catch(() => {
+        document.getElementById('status').textContent = 'API not reachable (run backend or check URL).';
+      });
+  </script>
+</body>
+</html>

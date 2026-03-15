@@ -1,6 +1,11 @@
 # Quin Backend
 
-Backend APIs for Quin - Agora voice calls, unique QR code generation, and web-to-mobile call routing. Deployable on Vercel.
+Backend APIs for Quin — Node.js + Express. Agora voice calls, QR code generation, web-to-mobile call routing. Deploy on Vercel (website and APIs).
+
+## Stack
+
+- **Node.js** + **Express** (no Vercel packages; Vercel is used only for hosting)
+- Same API routes as before; single Express app in `app.js`, entry for Vercel in `api/index.js`
 
 ## Setup
 
@@ -13,19 +18,15 @@ npm install
 
 ### 2. Environment variables
 
-Create a `.env` file (or set in Vercel Dashboard):
+Create a `.env` file (and in Vercel → Project → Settings → Environment Variables):
 
 ```env
 AGORA_APP_ID=your_agora_app_id
 AGORA_APP_CERTIFICATE=your_agora_app_certificate
-BASE_URL=https://your-app.vercel.app  # optional, auto on Vercel
+BASE_URL=https://your-app.vercel.app
 ```
 
-**Agora setup:**
-1. Go to [Agora Console](https://console.agora.io)
-2. Create a project → enable Voice (RTC)
-3. Get **App ID** and **App Certificate**
-4. Add them to `.env` and Vercel env vars
+**Agora:** [Agora Console](https://console.agora.io) → create project → enable Voice (RTC) → copy App ID and App Certificate.
 
 ### 3. Local development
 
@@ -33,18 +34,14 @@ BASE_URL=https://your-app.vercel.app  # optional, auto on Vercel
 npm run dev
 ```
 
+Server runs at `http://localhost:3000`. Use `GET /api/health` to check.
+
 ### 4. Deploy to Vercel
 
-```bash
-npm run deploy
-```
-
-Or connect your repo in [Vercel Dashboard](https://vercel.com) and add env vars there.
-
-**If the repo root is `Quin` (with `quin_backend` inside):**
-1. Vercel → your project → **Settings** → **General**
-2. Set **Root Directory** to `quin_backend` and Save
-3. Redeploy so only the backend is built (deploy should finish in ~1–2 min)
+- Push to GitHub and connect the repo in [Vercel](https://vercel.com), or use **Import** and point to this repo.
+- Set **Root Directory** to `quin_backend` if the repo root is the parent folder.
+- Add `AGORA_APP_ID` and `AGORA_APP_CERTIFICATE` (and optionally `BASE_URL`) in the project’s Environment Variables.
+- Deploy. All `/api/*` requests are handled by the Express app via `api/index.js`.
 
 ---
 

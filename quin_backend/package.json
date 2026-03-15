@@ -3,19 +3,17 @@
   "version": "1.0.0",
   "description": "Quin backend APIs - Agora voice calls, QR code generation, web-to-mobile routing",
   "type": "module",
+  "main": "server.js",
   "scripts": {
     "dev": "node server.js",
-    "dev:vercel": "npx vercel dev",
-    "deploy": "npx vercel --prod",
+    "start": "node server.js",
     "test": "echo \"No tests specified\""
   },
   "dependencies": {
     "agora-access-token": "^2.0.4",
+    "express": "^4.21.0",
     "qrcode": "^1.5.4",
     "uuid": "^11.0.3"
-  },
-  "devDependencies": {
-    "vercel": "latest"
   },
   "engines": {
     "node": "24.x"
