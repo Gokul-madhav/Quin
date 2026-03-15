@@ -1,31 +1,30 @@
 import { RtcTokenBuilder, RtcRole } from 'agora-access-token';
 import QRCode from 'qrcode';
 import { v4 as uuidv4 } from 'uuid';
+import { parseBody, sendJson, getBaseUrl } from '../_utils.js';
 
 /**
  * POST /api/call/create-with-qr
- * Creates a call session and returns token + QR code for mobile to scan and join.
- * Web calls this to start a voice call; mobile scans the QR to get call details.
+ * Creates a call session and returns token + QR code image for mobile to scan and join.
  */
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
-  const appId = process.env.AGORA_APP_ID;
-  const appCertificate = process.env.AGORA_APP_CERTIFICATE;
-  const baseUrl = process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : process.env.BASE_URL || 'http://localhost:3000';
-
-  if (!appId || !appCertificate) {
-    return res.status(500).json({
-      error: 'Agora not configured. Set AGORA_APP_ID and AGORA_APP_CERTIFICATE.',
-    });
-  }
-
   try {
-    const { userName = 'Host' } = req.body || {};
+    if (req.method !== 'POST') {
+      return sendJson(res, 405, { error: 'Method not allowed' });
+    }
+
+    const appId = process.env.AGORA_APP_ID;
+    const appCertificate = process.env.AGORA_APP_CERTIFICATE;
+    if (!appId || !appCertificate) {
+      return sendJson(res, 500, {
+        error: 'Agora not configured. Set AGORA_APP_ID and AGORA_APP_CERTIFICATE.',
+      });
+    }
+
+    const body = parseBody(req);
+    const { userName = 'Host' } = body;
+
+    const baseUrl = getBaseUrl();
     const callId = uuidv4().replace(/-/g, '').slice(0, 12);
     const channelName = `call_${callId}`;
     const hostUid = Math.floor(Math.random() * 100000) + 1;
@@ -53,7 +52,7 @@ export default async function handler(req, res) {
       margin: 2,
     });
 
-    return res.status(200).json({
+    return sendJson(res, 200, {
       success: true,
       call: {
         callId,
@@ -70,6 +69,6 @@ export default async function handler(req, res) {
     });
   } catch (err) {
     console.error('Create call with QR error:', err);
-    return res.status(500).json({ error: 'Failed to create call' });
+    return sendJson(res, 500, { error: 'Failed to create call' });
   }
 }

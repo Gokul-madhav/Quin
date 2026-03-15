@@ -1,35 +1,34 @@
 import { RtcTokenBuilder, RtcRole } from 'agora-access-token';
+import { parseBody, sendJson } from '../_utils.js';
 
 /**
  * POST /api/call/join-by-code
  * Body: { code: string } or { callId: string }
- * Mobile app uses this when user scans QR or enters short code to join the call.
+ * Returns token and channel info to join the call (e.g. after scanning QR).
  */
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
-  const appId = process.env.AGORA_APP_ID;
-  const appCertificate = process.env.AGORA_APP_CERTIFICATE;
-
-  if (!appId || !appCertificate) {
-    return res.status(500).json({
-      error: 'Agora not configured. Set AGORA_APP_ID and AGORA_APP_CERTIFICATE.',
-    });
-  }
-
   try {
-    const { code, callId } = req.body || {};
-    const id = code || callId;
+    if (req.method !== 'POST') {
+      return sendJson(res, 405, { error: 'Method not allowed' });
+    }
 
-    if (!id) {
-      return res.status(400).json({
-        error: 'code or callId is required',
+    const appId = process.env.AGORA_APP_ID;
+    const appCertificate = process.env.AGORA_APP_CERTIFICATE;
+    if (!appId || !appCertificate) {
+      return sendJson(res, 500, {
+        error: 'Agora not configured. Set AGORA_APP_ID and AGORA_APP_CERTIFICATE.',
       });
     }
 
-    const channelName = id.startsWith('call_') ? id : `call_${id}`;
+    const body = parseBody(req);
+    const { code, callId } = body;
+    const id = code || callId;
+
+    if (!id) {
+      return sendJson(res, 400, { error: 'code or callId is required' });
+    }
+
+    const channelName = String(id).startsWith('call_') ? String(id) : `call_${id}`;
     const uid = Math.floor(Math.random() * 100000) + 1;
     const expirationTime = Math.floor(Date.now() / 1000) + 3600;
 
@@ -42,7 +41,7 @@ export default async function handler(req, res) {
       expirationTime
     );
 
-    return res.status(200).json({
+    return sendJson(res, 200, {
       success: true,
       token,
       channelName,
@@ -52,6 +51,6 @@ export default async function handler(req, res) {
     });
   } catch (err) {
     console.error('Join by code error:', err);
-    return res.status(500).json({ error: 'Failed to join call' });
+    return sendJson(res, 500, { error: 'Failed to join call' });
   }
 }

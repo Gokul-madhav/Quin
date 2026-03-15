@@ -1,23 +1,22 @@
 import QRCode from 'qrcode';
 import { v4 as uuidv4 } from 'uuid';
+import { parseBody, sendJson, getBaseUrl } from '../_utils.js';
 
 /**
  * POST /api/qrcode/generate
  * Body: { payload?: string, type?: 'call'|'link'|'custom', size?: number }
- * Generates a unique QR code. If type='call', creates a call session and encodes it.
+ * Generates a unique QR code image (data URL) and metadata.
  */
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
-  const appId = process.env.AGORA_APP_ID;
-  const baseUrl = process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : process.env.BASE_URL || 'http://localhost:3000';
-
   try {
-    const { payload, type = 'custom', size = 256 } = req.body || {};
+    if (req.method !== 'POST') {
+      return sendJson(res, 405, { error: 'Method not allowed' });
+    }
+
+    const body = parseBody(req);
+    const { payload, type = 'custom', size = 256 } = body;
+    const baseUrl = getBaseUrl();
+    const appId = process.env.AGORA_APP_ID;
 
     let dataToEncode = payload;
     let metadata = {};
@@ -44,11 +43,11 @@ export default async function handler(req, res) {
     }
 
     const qrDataUrl = await QRCode.toDataURL(dataToEncode, {
-      width: Math.min(size, 512),
+      width: Math.min(Number(size) || 256, 512),
       margin: 2,
     });
 
-    return res.status(200).json({
+    return sendJson(res, 200, {
       success: true,
       qrDataUrl,
       payload: dataToEncode,
@@ -56,6 +55,6 @@ export default async function handler(req, res) {
     });
   } catch (err) {
     console.error('QR generation error:', err);
-    return res.status(500).json({ error: 'Failed to generate QR code' });
+    return sendJson(res, 500, { error: 'Failed to generate QR code' });
   }
 }

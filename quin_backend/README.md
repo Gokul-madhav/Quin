@@ -41,6 +41,11 @@ npm run deploy
 
 Or connect your repo in [Vercel Dashboard](https://vercel.com) and add env vars there.
 
+**If the repo root is `Quin` (with `quin_backend` inside):**
+1. Vercel → your project → **Settings** → **General**
+2. Set **Root Directory** to `quin_backend` and Save
+3. Redeploy so only the backend is built (deploy should finish in ~1–2 min)
+
 ---
 
 ## API Reference

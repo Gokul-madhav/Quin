@@ -1,32 +1,31 @@
 import { RtcTokenBuilder, RtcRole } from 'agora-access-token';
+import { parseBody, sendJson } from '../../_utils.js';
 
 /**
  * POST /api/agora/call/join
  * Body: { callId: string } or { channelName: string }
- * Mobile app calls this with the callId (from scanned QR) to get token and join the call.
+ * Returns token and channel info to join the call.
  */
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
-  const appId = process.env.AGORA_APP_ID;
-  const appCertificate = process.env.AGORA_APP_CERTIFICATE;
-
-  if (!appId || !appCertificate) {
-    return res.status(500).json({
-      error: 'Agora not configured. Set AGORA_APP_ID and AGORA_APP_CERTIFICATE.',
-    });
-  }
-
   try {
-    const { callId, channelName: channelParam } = req.body || {};
+    if (req.method !== 'POST') {
+      return sendJson(res, 405, { error: 'Method not allowed' });
+    }
+
+    const appId = process.env.AGORA_APP_ID;
+    const appCertificate = process.env.AGORA_APP_CERTIFICATE;
+    if (!appId || !appCertificate) {
+      return sendJson(res, 500, {
+        error: 'Agora not configured. Set AGORA_APP_ID and AGORA_APP_CERTIFICATE.',
+      });
+    }
+
+    const body = parseBody(req);
+    const { callId, channelName: channelParam } = body;
     const channelName = channelParam || (callId ? `call_${callId}` : null);
 
     if (!channelName) {
-      return res.status(400).json({
-        error: 'callId or channelName is required',
-      });
+      return sendJson(res, 400, { error: 'callId or channelName is required' });
     }
 
     const uid = Math.floor(Math.random() * 100000) + 1;
@@ -41,7 +40,7 @@ export default async function handler(req, res) {
       expirationTime
     );
 
-    return res.status(200).json({
+    return sendJson(res, 200, {
       success: true,
       token,
       channelName,
@@ -51,6 +50,6 @@ export default async function handler(req, res) {
     });
   } catch (err) {
     console.error('Join call error:', err);
-    return res.status(500).json({ error: 'Failed to join call' });
+    return sendJson(res, 500, { error: 'Failed to join call' });
   }
 }

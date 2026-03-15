@@ -61,16 +61,14 @@ const server = http.createServer(async (req, res) => {
     const body = await parseBody(req);
     const mockReq = { method: req.method, url: req.url, body };
     const mockRes = {
-      status: (code) => ({ json: (data) => send(res, code, data) }),
       setHeader: () => {},
-      end: () => {},
+      status: (code) => ({
+        end: (body) => {
+          res.writeHead(code, { 'Content-Type': 'application/json' });
+          res.end(body);
+        },
+      }),
     };
-    mockRes.status = (code) => ({
-      json: (data) => {
-        res.writeHead(code, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify(data));
-      },
-    });
     await handler(mockReq, mockRes);
   } catch (err) {
     console.error(err);
