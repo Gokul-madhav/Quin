@@ -1,17 +1,17 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
-const { createContactRequest } = require('../controllers/contactController');
+const { startCall } = require('../controllers/callController');
 
 const router = express.Router();
 
-const contactRateLimiter = rateLimit({
+const callRateLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 20,
+  max: 10,
   standardHeaders: true,
   legacyHeaders: false,
 });
 
-router.post('/request', contactRateLimiter, createContactRequest);
+router.post('/start', callRateLimiter, startCall);
 
 module.exports = router;
 

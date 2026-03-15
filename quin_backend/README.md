@@ -1,3 +1,46 @@
+## Quin Backend
+
+Node.js + Express backend for **Quin**, a QR-based vehicle contact platform.
+
+### Tech stack
+
+- **Node.js / Express**
+- **Firebase Admin SDK**
+  - Realtime Database (primary data store)
+  - Firestore (`privacy_settings` collection only)
+- **Agora** (voice calls)
+
+### Core features
+
+- QR code generation and activation
+- Visitor QR scan flow with privacy-aware responses
+- Contact requests (messaging) with push notifications
+- Voice call sessions via Agora with 90-second limit
+
+### Important environment variables
+
+Configure these in `.env` (or the Vercel project env settings):
+
+- `FIREBASE_PROJECT_ID`
+- `FIREBASE_CLIENT_EMAIL`
+- `FIREBASE_PRIVATE_KEY` (escape newlines as `\n` if set inline)
+- `FIREBASE_DATABASE_URL`
+- `AGORA_APP_ID`
+- `AGORA_APP_CERTIFICATE`
+- `CORS_ORIGIN` (optional, comma-separated list of allowed origins)
+
+### Key API endpoints
+
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `POST /api/vehicles/add`
+- `GET  /api/vehicles/user/:userId`
+- `POST /api/qr/generate`
+- `POST /api/qr/activate`
+- `GET  /api/qr/:qrId`
+- `POST /api/contact/request`
+- `POST /api/call/start`
+
 # Quin Backend
 
 Backend APIs for Quin — Node.js + Express. Agora voice calls, QR code generation, web-to-mobile call routing. Deploy on Vercel (website and APIs).

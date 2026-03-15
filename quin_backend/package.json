@@ -1,21 +1,29 @@
 {
   "name": "quin-backend",
   "version": "1.0.0",
-  "description": "Quin backend APIs - Agora voice calls, QR code generation, web-to-mobile routing",
-  "type": "module",
-  "main": "server.js",
+  "description": "Quin QR-based vehicle contact backend (Node.js, Express, Firebase, Agora).",
+  "main": "src/server.js",
   "scripts": {
-    "dev": "node server.js",
-    "start": "node server.js",
-    "test": "echo \"No tests specified\""
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   },
   "dependencies": {
     "agora-access-token": "^2.0.4",
-    "express": "^4.21.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.3.0",
+    "firebase-admin": "^12.6.0",
+    "helmet": "^7.0.0",
+    "joi": "^17.13.3",
+    "morgan": "^1.10.0",
     "qrcode": "^1.5.4",
-    "uuid": "^11.0.3"
+    "uuid": "^9.0.1"
   },
-  "engines": {
-    "node": "24.x"
+  "devDependencies": {
+    "nodemon": "^3.1.0"
   }
 }
