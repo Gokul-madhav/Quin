@@ -5,61 +5,38 @@ const QR_PREFIX = 'QN';
 const QR_PAD_LENGTH = 6;
 const QR_BASE_URL = 'https://quin.app/v';
 
-const getNextQrIds = async (batchSize) => {
-  const db = getDb();
-  const counterRef = db.ref('meta/qr_counter');
-
-  const { ids } = await counterRef.transaction((current) => {
-    const start = (current || 0) + 1;
-    const end = start + batchSize - 1;
-    const updated = end;
-
-    const generatedIds = [];
-    for (let i = start; i <= end; i += 1) {
-      const padded = String(i).padStart(QR_PAD_LENGTH, '0');
-      generatedIds.push(`${QR_PREFIX}${padded}`);
-    }
-
-    // Store ids in a side-channel for transaction completion
-    counterRef.generatedIds = generatedIds;
-    return updated;
-  });
-
-  // Fallback: if transaction result didn't include side-channel, recompute
-  if (!ids) {
-    throw new Error('Failed to allocate QR IDs');
-  }
-
-  return ids;
-};
-
+/**
+ * Atomically increments a simple numeric counter at `meta/qr_counter`
+ * and returns the newly allocated sequential QR IDs.
+ *
+ * We intentionally keep the stored value as a plain number to avoid
+ * complex nested objects that can introduce NaN / serialization issues
+ * in Firebase transactions.
+ */
 const allocateQrIds = async (batchSize) => {
   const db = getDb();
   const counterRef = db.ref('meta/qr_counter');
 
   const result = await counterRef.transaction((current) => {
-    const start = (current || 0) + 1;
-    const end = start + batchSize - 1;
-    const updated = end;
-
-    const generatedIds = [];
-    for (let i = start; i <= end; i += 1) {
-      const padded = String(i).padStart(QR_PAD_LENGTH, '0');
-      generatedIds.push(`${QR_PREFIX}${padded}`);
-    }
-
-    return {
-      value: updated,
-      ids: generatedIds,
-    };
+    const currentValue = typeof current === 'number' && Number.isFinite(current) ? current : 0;
+    return currentValue + batchSize;
   });
 
-  if (!result.committed || !result.snapshot || !result.snapshot.val()) {
+  if (!result.committed || !result.snapshot) {
     throw new Error('Failed to allocate QR IDs');
   }
 
-  const value = result.snapshot.val();
-  return value.ids;
+  const newCounter = result.snapshot.val();
+  const start = newCounter - batchSize + 1;
+  const end = newCounter;
+
+  const ids = [];
+  for (let i = start; i <= end; i += 1) {
+    const padded = String(i).padStart(QR_PAD_LENGTH, '0');
+    ids.push(`${QR_PREFIX}${padded}`);
+  }
+
+  return ids;
 };
 
 const createQrCodesBatch = async (batchSize) => {
