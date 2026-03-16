@@ -19,7 +19,7 @@ const startCall = async (req, res, next) => {
     const { qr_id: qrId, visitor_id: visitorId } = value;
 
     const qrData = await getQrById(qrId);
-    if (!qrData || qrData.status !== 'activated') {
+    if (!qrData) {
       return res.status(400).json({ error: 'QR code is not activated or not found' });
     }
 

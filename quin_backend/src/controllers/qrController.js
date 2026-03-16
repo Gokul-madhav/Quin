@@ -66,10 +66,6 @@ const getQrDetails = async (req, res, next) => {
       return res.status(404).json({ error: 'QR code not found' });
     }
 
-    if (qrData.status !== 'activated') {
-      return res.status(400).json({ error: 'QR code is not activated' });
-    }
-
     const db = getDb();
     const vehicleSnap = await db.ref(`vehicles/${qrData.vehicle_id}`).once('value');
     const vehicle = vehicleSnap.val();
