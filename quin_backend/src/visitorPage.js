@@ -374,6 +374,32 @@ function renderVisitorPage(qrId) {
         }
       });
 
+      let callSessionId = null;
+      let pollTimer = null;
+
+      function startPollingSession() {
+        if (!callSessionId) return;
+        if (pollTimer) clearInterval(pollTimer);
+        pollTimer = setInterval(async () => {
+          try {
+            const res = await fetch('/api/call/session/' + encodeURIComponent(callSessionId));
+            const data = await res.json();
+            if (!res.ok) return;
+            const status = data && data.session && data.session.status;
+            if (!status) return;
+
+            if (status === 'declined' || status === 'ended' || status === 'timeout') {
+              // End locally if remote ended/declined
+              if (window.__quin_endCall) {
+                window.__quin_endCall(status);
+              }
+            }
+          } catch (_) {
+            // ignore polling errors
+          }
+        }, 1500);
+      }
+
       callBtn.addEventListener('click', async () => {
         const reason = reasonSelect.value;
         if (!reason) {
@@ -388,6 +414,8 @@ function renderVisitorPage(qrId) {
             reason,
             visitor_id: null
           });
+          callSessionId = data.session_id;
+          startPollingSession();
           setStatus('Connecting audio call… Allow microphone access.', 'success');
           await startAgoraCall(data);
         } catch (err) {
@@ -424,6 +452,40 @@ function renderVisitorPage(qrId) {
         const client = window.AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
         const localTrack = await window.AgoraRTC.createMicrophoneAudioTrack();
 
+        let ended = false;
+        async function endLocal(kind) {
+          if (ended) return;
+          ended = true;
+          try {
+            if (pollTimer) clearInterval(pollTimer);
+          } catch (_) {}
+
+          try {
+            await client.unpublish([localTrack]);
+          } catch (_) {}
+          try {
+            localTrack.stop();
+            localTrack.close();
+          } catch (_) {}
+          try {
+            await client.leave();
+          } catch (_) {}
+
+          if (kind === 'declined') {
+            setStatus('Owner declined the call.', 'error');
+          } else if (kind === 'timeout') {
+            setStatus('Call timed out.', 'error');
+          } else if (kind === 'ended') {
+            setStatus('Call ended.', '');
+          } else {
+            setStatus('Call ended.', '');
+          }
+        }
+
+        window.__quin_endCall = async (kind) => {
+          await endLocal(kind);
+        };
+
         await client.join(appId, channel, token, uid);
         await client.publish([localTrack]);
 
@@ -435,16 +497,13 @@ function renderVisitorPage(qrId) {
         callBtn.onclick = async () => {
           try {
             callBtn.disabled = true;
-            await client.unpublish([localTrack]);
-            localTrack.stop();
-            localTrack.close();
-            await client.leave();
-            setStatus('Call ended.', '');
-          } catch (e) {
-            setStatus('Failed to end call.', 'error');
+            if (callSessionId) {
+              await postJson('/api/call/end', { session_id: callSessionId });
+            }
+          } catch (_) {
+            // ignore
           } finally {
-            // restore original handler by reloading page state
-            window.location.reload();
+            await endLocal('ended');
           }
         };
       }

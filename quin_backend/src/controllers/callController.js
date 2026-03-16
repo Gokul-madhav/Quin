@@ -11,6 +11,95 @@ const startCallSchema = Joi.object({
   visitor_id: Joi.string().allow(null),
 });
 
+const updateSessionSchema = Joi.object({
+  session_id: Joi.string().required(),
+});
+
+const getCallSession = async (req, res, next) => {
+  try {
+    const { sessionId } = req.params;
+    if (!sessionId) return res.status(400).json({ error: 'sessionId is required' });
+
+    const db = getDb();
+    const snap = await db.ref(`call_sessions/${sessionId}`).once('value');
+    const session = snap.val();
+    if (!session) return res.status(404).json({ error: 'Call session not found' });
+
+    return res.json({ session });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+const acceptCall = async (req, res, next) => {
+  try {
+    const { value, error } = updateSessionSchema.validate(req.body || {});
+    if (error) return res.status(400).json({ error: error.message });
+
+    const { session_id: sessionId } = value;
+    const db = getDb();
+    const ref = db.ref(`call_sessions/${sessionId}`);
+    const snap = await ref.once('value');
+    const current = snap.val();
+    if (!current) return res.status(404).json({ error: 'Call session not found' });
+
+    if (current.status === 'ended' || current.status === 'declined' || current.status === 'timeout') {
+      return res.status(400).json({ error: `Call already ${current.status}` });
+    }
+
+    await ref.update({ status: 'accepted' });
+    return res.json({ message: 'Call accepted' });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+const declineCall = async (req, res, next) => {
+  try {
+    const { value, error } = updateSessionSchema.validate(req.body || {});
+    if (error) return res.status(400).json({ error: error.message });
+
+    const { session_id: sessionId } = value;
+    const db = getDb();
+    const ref = db.ref(`call_sessions/${sessionId}`);
+    const snap = await ref.once('value');
+    const current = snap.val();
+    if (!current) return res.status(404).json({ error: 'Call session not found' });
+
+    if (current.status === 'ended' || current.status === 'timeout') {
+      return res.status(400).json({ error: `Call already ${current.status}` });
+    }
+
+    await ref.update({ status: 'declined', end_time: Date.now() });
+    return res.json({ message: 'Call declined' });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+const endCall = async (req, res, next) => {
+  try {
+    const { value, error } = updateSessionSchema.validate(req.body || {});
+    if (error) return res.status(400).json({ error: error.message });
+
+    const { session_id: sessionId } = value;
+    const db = getDb();
+    const ref = db.ref(`call_sessions/${sessionId}`);
+    const snap = await ref.once('value');
+    const current = snap.val();
+    if (!current) return res.status(404).json({ error: 'Call session not found' });
+
+    if (current.status === 'ended') {
+      return res.json({ message: 'Call already ended' });
+    }
+
+    await ref.update({ status: 'ended', end_time: Date.now() });
+    return res.json({ message: 'Call ended' });
+  } catch (err) {
+    return next(err);
+  }
+};
+
 const startCall = async (req, res, next) => {
   try {
     const { value, error } = startCallSchema.validate(req.body || {});
@@ -115,5 +204,9 @@ const startCall = async (req, res, next) => {
 
 module.exports = {
   startCall,
+  getCallSession,
+  acceptCall,
+  declineCall,
+  endCall,
 };
 
