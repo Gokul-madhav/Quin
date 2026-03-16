@@ -471,13 +471,18 @@ function renderVisitorPage(qrId) {
             await client.leave();
           } catch (_) {}
 
+          // Prevent re-calling without a full reload.
+          callBtn.onclick = null;
+          callBtn.disabled = true;
+
           if (kind === 'declined') {
+            callBtn.textContent = 'Owner declined';
             setStatus('Owner declined the call.', 'error');
           } else if (kind === 'timeout') {
+            callBtn.textContent = 'Call timed out';
             setStatus('Call timed out.', 'error');
-          } else if (kind === 'ended') {
-            setStatus('Call ended.', '');
           } else {
+            callBtn.textContent = 'Call ended';
             setStatus('Call ended.', '');
           }
         }

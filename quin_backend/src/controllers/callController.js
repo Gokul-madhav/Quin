@@ -70,7 +70,7 @@ const declineCall = async (req, res, next) => {
       return res.status(400).json({ error: `Call already ${current.status}` });
     }
 
-    await ref.update({ status: 'declined', end_time: Date.now() });
+    await ref.update({ status: 'declined', end_time: new Date().toISOString() });
     return res.json({ message: 'Call declined' });
   } catch (err) {
     return next(err);
@@ -93,7 +93,7 @@ const endCall = async (req, res, next) => {
       return res.json({ message: 'Call already ended' });
     }
 
-    await ref.update({ status: 'ended', end_time: Date.now() });
+    await ref.update({ status: 'ended', end_time: new Date().toISOString() });
     return res.json({ message: 'Call ended' });
   } catch (err) {
     return next(err);
@@ -127,8 +127,7 @@ const startCall = async (req, res, next) => {
     const ownerCreds = generateToken({ channelName });
 
     const sessionId = uuidv4();
-    const now = Date.now();
-    const endTime = now + CALL_DURATION_SECONDS * 1000;
+    const nowIso = new Date().toISOString();
 
     const session = {
       session_id: sessionId,
@@ -137,7 +136,7 @@ const startCall = async (req, res, next) => {
       visitor_id: visitorId || null,
       qr_id: qrId,
       reason: reason || '',
-      start_time: now,
+      start_time: nowIso,
       end_time: null,
       status: 'active',
       channel_name: channelName,
@@ -179,7 +178,7 @@ const startCall = async (req, res, next) => {
         if (current && current.status === 'active') {
           await db.ref(`call_sessions/${sessionId}`).update({
             status: 'timeout',
-            end_time: endTime,
+            end_time: new Date().toISOString(),
           });
         }
       } catch (e) {

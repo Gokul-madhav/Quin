@@ -37,7 +37,7 @@ const register = async (req, res, next) => {
     await db.ref(`users/${uid}`).update({
       name,
       phone_last4: phone.slice(-4), // store only last4 for privacy
-      created_at: Date.now(),
+      created_at: new Date().toISOString(),
     });
 
     return res.status(201).json({

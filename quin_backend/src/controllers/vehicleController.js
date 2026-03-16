@@ -30,7 +30,7 @@ const addVehicle = async (req, res, next) => {
       owner_name: ownerName,
       model: model || null,
       color: color || null,
-      created_at: Date.now(),
+      created_at: new Date().toISOString(),
     };
 
     await vehicleRef.set(vehicleData);

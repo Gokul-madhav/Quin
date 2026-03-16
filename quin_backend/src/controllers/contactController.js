@@ -42,7 +42,7 @@ const createContactRequest = async (req, res, next) => {
     }
 
     const requestId = uuidv4();
-    const timestamp = Date.now();
+    const timestamp = new Date().toISOString();
 
     const contactRequest = {
       request_id: requestId,

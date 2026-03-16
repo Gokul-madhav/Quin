@@ -46,7 +46,7 @@ const createQrCodesBatch = async (batchSize) => {
   const updates = {};
   const qrEntries = [];
 
-  const now = Date.now();
+  const nowIso = new Date().toISOString();
   ids.forEach((qrId) => {
     const qrUrl = `${QR_BASE_URL}/${qrId}`;
     const refPath = `qr_codes/${qrId}`;
@@ -54,7 +54,7 @@ const createQrCodesBatch = async (batchSize) => {
       qr_id: qrId,
       status: 'unused',
       vehicle_id: null,
-      created_at: now,
+      created_at: nowIso,
     };
     qrEntries.push({ qrId, qrUrl });
   });
@@ -111,7 +111,7 @@ const activateQr = async ({ qrId, vehicleId, userId }) => {
     status: 'activated',
     vehicle_id: vehicleId,
     owner_id: userId,
-    activated_at: Date.now(),
+    activated_at: new Date().toISOString(),
   };
 
   await qrRef.update(updates);
