@@ -157,8 +157,10 @@ function renderVisitorPage(qrId) {
       gap: 10px;
       margin-top: 10px;
     }
-    button {
+    .actions button {
       flex: 1;
+    }
+    button {
       border-radius: 999px;
       border: none;
       padding: 10px 14px;
@@ -256,6 +258,7 @@ function renderVisitorPage(qrId) {
       <div class="actions">
         <button id="message-btn" class="btn-secondary" disabled>Send message</button>
         <button id="call-btn" class="btn-primary" disabled>Call owner</button>
+        <button id="end-call-btn" class="btn-secondary" disabled>End call</button>
       </div>
       <div id="status" class="status"></div>
       <p class="disclaimer">
@@ -271,6 +274,7 @@ function renderVisitorPage(qrId) {
       const messageInput = document.getElementById('message');
       const messageBtn = document.getElementById('message-btn');
       const callBtn = document.getElementById('call-btn');
+      const endCallBtn = document.getElementById('end-call-btn');
       const statusEl = document.getElementById('status');
 
       function setStatus(text, kind) {
@@ -281,7 +285,10 @@ function renderVisitorPage(qrId) {
       function updateButtons() {
         const hasReason = !!reasonSelect.value;
         messageBtn.disabled = !hasReason;
-        callBtn.disabled = !hasReason;
+        if (!window.__quin_inCall) {
+          callBtn.disabled = !hasReason;
+        }
+        endCallBtn.disabled = !window.__quin_inCall;
       }
 
       reasonSelect.addEventListener('change', updateButtons);
@@ -299,8 +306,12 @@ function renderVisitorPage(qrId) {
           loadingEl.style.display = 'none';
           contentEl.style.display = 'block';
 
-          document.getElementById('vehicle-number').textContent =
-            data.vehicle_number || 'Vehicle';
+          const fullNumber = data.vehicle_number || 'Vehicle';
+          const blurred = fullNumber.replace(/(.+)(.{4})$/, (m, head, tail) => {
+            if (head.length <= 0) return '****';
+            return head + '****';
+          });
+          document.getElementById('vehicle-number').textContent = blurred;
 
           const ownerNameEl = document.getElementById('owner-name');
           ownerNameEl.textContent = data.owner_name || 'Owner (identity hidden)';
@@ -389,13 +400,11 @@ function renderVisitorPage(qrId) {
             if (!status) return;
 
             if (status === 'declined' || status === 'ended' || status === 'timeout') {
-              // End locally if remote ended/declined
               if (window.__quin_endCall) {
                 window.__quin_endCall(status);
               }
             }
           } catch (_) {
-            // ignore polling errors
           }
         }, 1500);
       }
@@ -414,14 +423,16 @@ function renderVisitorPage(qrId) {
             reason,
             visitor_id: null
           });
+          window.__quin_inCall = true;
+          updateButtons();
           callSessionId = data.session_id;
           startPollingSession();
           setStatus('Connecting audio call… Allow microphone access.', 'success');
           await startAgoraCall(data);
         } catch (err) {
-          setStatus(err.message || 'Failed to start call.', 'error');
-        } finally {
+          window.__quin_inCall = false;
           updateButtons();
+          setStatus(err.message || 'Failed to start call.', 'error');
         }
       });
 
@@ -453,9 +464,13 @@ function renderVisitorPage(qrId) {
         const localTrack = await window.AgoraRTC.createMicrophoneAudioTrack();
 
         let ended = false;
+        window.__quin_inCall = true;
+        updateButtons();
         async function endLocal(kind) {
           if (ended) return;
           ended = true;
+          window.__quin_inCall = false;
+          updateButtons();
           try {
             if (pollTimer) clearInterval(pollTimer);
           } catch (_) {}
@@ -471,7 +486,6 @@ function renderVisitorPage(qrId) {
             await client.leave();
           } catch (_) {}
 
-          // Prevent re-calling without a full reload.
           callBtn.onclick = null;
           callBtn.disabled = true;
 
@@ -496,17 +510,16 @@ function renderVisitorPage(qrId) {
 
         setStatus('Connected. Waiting for the owner to accept…', 'success');
 
-        // Basic hangup UX
-        callBtn.textContent = 'End call';
-        callBtn.disabled = false;
-        callBtn.onclick = async () => {
+        callBtn.textContent = 'Call in progress';
+        callBtn.disabled = true;
+        endCallBtn.disabled = false;
+        endCallBtn.onclick = async () => {
           try {
-            callBtn.disabled = true;
+            endCallBtn.disabled = true;
             if (callSessionId) {
               await postJson('/api/call/end', { session_id: callSessionId });
             }
           } catch (_) {
-            // ignore
           } finally {
             await endLocal('ended');
           }
