@@ -2,6 +2,7 @@ const Joi = require('joi');
 const { v4: uuidv4 } = require('uuid');
 const { getDb } = require('../services/firebaseService');
 const { getQrById } = require('../services/qrService');
+const { sendNotificationToUser } = require('../services/notificationService');
 const { generateChannelName, generateToken, CALL_DURATION_SECONDS } = require('../services/agoraService');
 
 const startCallSchema = Joi.object({
@@ -51,6 +52,29 @@ const startCall = async (req, res, next) => {
     };
 
     await db.ref(`call_sessions/${sessionId}`).set(session);
+
+    // Proactively notify the vehicle owner so their app can "ring"
+    if (vehicle.owner_id) {
+      try {
+        await sendNotificationToUser(
+          vehicle.owner_id,
+          'Incoming Quin call',
+          'A visitor wants to talk to you about your vehicle.',
+          {
+            type: 'call',
+            session_id: sessionId,
+            channel_name: channelName,
+            agora_token: token,
+            agora_app_id: appId,
+            agora_uid: String(uid),
+            qr_id: qrId,
+          }
+        );
+      } catch (notifyErr) {
+        // eslint-disable-next-line no-console
+        console.error('Failed to send call notification', notifyErr);
+      }
+    }
 
     // Schedule timeout update; in a true serverless/cron setup this might be
     // handled by a background worker or scheduled job.

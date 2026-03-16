@@ -87,6 +87,8 @@ const getQrDetails = async (req, res, next) => {
     const response = {
       vehicle_number: vehicle.vehicle_number,
       owner_name: privacy && privacy.hide_identity ? null : vehicle.owner_name,
+      model: vehicle.model || null,
+      color: vehicle.color || null,
       privacy_settings: privacy || {},
     };
 

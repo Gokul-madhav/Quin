@@ -307,6 +307,24 @@ function renderVisitorPage(qrId) {
 
           const metaRow = document.getElementById('vehicle-meta');
           metaRow.innerHTML = '';
+
+          const model = data.model;
+          const color = data.color;
+
+          if (model) {
+            const pill = document.createElement('span');
+            pill.className = 'meta-pill';
+            pill.textContent = model;
+            metaRow.appendChild(pill);
+          }
+
+          if (color) {
+            const pill = document.createElement('span');
+            pill.className = 'meta-pill';
+            pill.textContent = color;
+            metaRow.appendChild(pill);
+          }
+
           if (data.privacy_settings && data.privacy_settings.note) {
             const pill = document.createElement('span');
             pill.className = 'meta-pill';
