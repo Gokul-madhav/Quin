@@ -9,15 +9,14 @@ import app from '../app.js';
 import { renderVisitorPage } from '../src/visitorPage';
 
 export default function handler(req, res) {
-  // When Vercel rewrites /v/:qrId -> /api/index/v/:qrId the incoming path
-  // will contain `/v/<qrId>` after the /api/index prefix.
-  if (req.url && req.url.includes('/v/')) {
-    // Example incoming URLs:
-    //   /api/index/v/QN000001
-    //   /api/index/v/QN000001?foo=bar
-    const parts = req.url.split('/v/');
-    const tail = parts[1] || '';
-    const qrId = decodeURIComponent(tail.split(/[?#]/)[0] || '');
+  const url = req.url || '';
+
+  // Handle QR visitor page when /v/<qrId> is rewritten to /api/index?qrId=<qrId>
+  const hasQrIdQuery = url.includes('qrId=');
+  if (hasQrIdQuery) {
+    const queryPart = url.split('?')[1] || '';
+    const params = new URLSearchParams(queryPart);
+    const qrId = params.get('qrId') || '';
 
     if (!qrId) {
       res.statusCode = 400;

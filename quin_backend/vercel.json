@@ -2,6 +2,6 @@
   "version": 2,
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/index" },
-    { "source": "/v/:qrId", "destination": "/api/index/v/:qrId" }
+    { "source": "/v/(.*)", "destination": "/api/index?qrId=$1" }
   ]
 }
