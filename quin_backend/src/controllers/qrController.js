@@ -26,7 +26,7 @@ const generateQrCodes = async (req, res, next) => {
       count: result.ids.length,
       qr_codes: result.ids.map((qrId) => ({
         qr_id: qrId,
-        url: `https://quin.app/v/${qrId}`,
+        url: `https://quin-eight.vercel.app/v/${qrId}`,
         image_data: result.images[qrId],
       })),
     });

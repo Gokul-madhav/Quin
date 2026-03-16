@@ -139,7 +139,7 @@ Server runs at `http://localhost:3000`. Use `GET /api/health` to check.
 ### Create call with QR (web)
 
 ```bash
-curl -X POST https://your-app.vercel.app/api/call/create-with-qr \
+curl -X POST https://quin-eight.vercel.app/api/call/create-with-qr \
   -H "Content-Type: application/json" \
   -d '{"userName": "Host"}'
 ```
@@ -147,7 +147,7 @@ curl -X POST https://your-app.vercel.app/api/call/create-with-qr \
 ### Join by code (mobile)
 
 ```bash
-curl -X POST https://your-app.vercel.app/api/call/join-by-code \
+curl -X POST https://quin-eight.vercel.app/api/call/join-by-code \
   -H "Content-Type: application/json" \
   -d '{"code": "abc123def456"}'
 ```
@@ -155,7 +155,7 @@ curl -X POST https://your-app.vercel.app/api/call/join-by-code \
 ### Generate custom QR
 
 ```bash
-curl -X POST https://your-app.vercel.app/api/qrcode/generate \
+curl -X POST https://quin-eight.vercel.app/api/qrcode/generate \
   -H "Content-Type: application/json" \
   -d '{"type": "call", "size": 300}'
 ```
