@@ -21,14 +21,19 @@ const generateChannelName = (qrId, vehicleId) => {
   return `quin_${qrId || 'qr'}_${vehicleId || 'veh'}_${randomSuffix}`;
 };
 
-const generateToken = ({ channelName }) => {
+const generateToken = ({ channelName, uid }) => {
   if (!AGORA_APP_ID || !AGORA_APP_CERTIFICATE) {
     const error = new Error('Agora credentials not configured');
     error.status = 500;
     throw error;
   }
 
-  const uid = 0; // 0 means let Agora assign
+  // Use a non-zero uid to avoid collisions when multiple clients join.
+  // If not provided, generate a random 32-bit uid.
+  const effectiveUid =
+    typeof uid === 'number' && Number.isInteger(uid) && uid > 0
+      ? uid
+      : Math.floor(Math.random() * 2147483647) + 1;
   const role = RtcRole.PUBLISHER;
   const now = Math.floor(Date.now() / 1000);
   const privilegeExpireTs = now + CALL_DURATION_SECONDS + TOKEN_BUFFER_SECONDS;
@@ -37,7 +42,7 @@ const generateToken = ({ channelName }) => {
     AGORA_APP_ID,
     AGORA_APP_CERTIFICATE,
     channelName,
-    uid,
+    effectiveUid,
     role,
     privilegeExpireTs
   );
@@ -46,7 +51,7 @@ const generateToken = ({ channelName }) => {
     token,
     expiresAt: privilegeExpireTs,
     appId: AGORA_APP_ID,
-    uid,
+    uid: effectiveUid,
   };
 };
 

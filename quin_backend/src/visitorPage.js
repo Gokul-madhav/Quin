@@ -385,16 +385,69 @@ function renderVisitorPage(qrId) {
         try {
           const data = await postJson('/api/call/start', {
             qr_id: qrId,
+            reason,
             visitor_id: null
           });
-          setStatus('Call session created. The Quin app will ring on the owner\\'s side so you can talk directly.', 'success');
-          console.log('Call session', data);
+          setStatus('Connecting audio call… Allow microphone access.', 'success');
+          await startAgoraCall(data);
         } catch (err) {
           setStatus(err.message || 'Failed to start call.', 'error');
         } finally {
           updateButtons();
         }
       });
+
+      function loadAgoraSdk() {
+        return new Promise((resolve, reject) => {
+          if (window.AgoraRTC) return resolve();
+          const script = document.createElement('script');
+          script.src = 'https://download.agora.io/sdk/release/AgoraRTC_N-4.20.2.js';
+          script.async = true;
+          script.onload = () => resolve();
+          script.onerror = () => reject(new Error('Failed to load Agora SDK'));
+          document.head.appendChild(script);
+        });
+      }
+
+      async function startAgoraCall(callData) {
+        await loadAgoraSdk();
+
+        const appId = callData.agora_app_id;
+        const token = callData.agora_token;
+        const channel = callData.channel_name;
+        const uid = callData.agora_uid;
+
+        if (!appId || !token || !channel) {
+          throw new Error('Call credentials missing');
+        }
+
+        const client = window.AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
+        const localTrack = await window.AgoraRTC.createMicrophoneAudioTrack();
+
+        await client.join(appId, channel, token, uid);
+        await client.publish([localTrack]);
+
+        setStatus('Connected. Waiting for the owner to accept…', 'success');
+
+        // Basic hangup UX
+        callBtn.textContent = 'End call';
+        callBtn.disabled = false;
+        callBtn.onclick = async () => {
+          try {
+            callBtn.disabled = true;
+            await client.unpublish([localTrack]);
+            localTrack.stop();
+            localTrack.close();
+            await client.leave();
+            setStatus('Call ended.', '');
+          } catch (e) {
+            setStatus('Failed to end call.', 'error');
+          } finally {
+            // restore original handler by reloading page state
+            window.location.reload();
+          }
+        };
+      }
 
       fetchVehicle();
       updateButtons();

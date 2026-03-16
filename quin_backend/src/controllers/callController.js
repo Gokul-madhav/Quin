@@ -7,6 +7,7 @@ const { generateChannelName, generateToken, CALL_DURATION_SECONDS } = require('.
 
 const startCallSchema = Joi.object({
   qr_id: Joi.string().required(),
+  reason: Joi.string().max(200).allow('', null),
   visitor_id: Joi.string().allow(null),
 });
 
@@ -17,7 +18,7 @@ const startCall = async (req, res, next) => {
       return res.status(400).json({ error: error.message });
     }
 
-    const { qr_id: qrId, visitor_id: visitorId } = value;
+    const { qr_id: qrId, reason, visitor_id: visitorId } = value;
 
     const qrData = await getQrById(qrId);
     if (!qrData) {
@@ -33,7 +34,8 @@ const startCall = async (req, res, next) => {
     }
 
     const channelName = generateChannelName(qrId, qrData.vehicle_id);
-    const { token, expiresAt, appId, uid } = generateToken({ channelName });
+    const visitorCreds = generateToken({ channelName });
+    const ownerCreds = generateToken({ channelName });
 
     const sessionId = uuidv4();
     const now = Date.now();
@@ -45,6 +47,7 @@ const startCall = async (req, res, next) => {
       owner_id: vehicle.owner_id,
       visitor_id: visitorId || null,
       qr_id: qrId,
+      reason: reason || '',
       start_time: now,
       end_time: null,
       status: 'active',
@@ -59,15 +62,17 @@ const startCall = async (req, res, next) => {
         await sendNotificationToUser(
           vehicle.owner_id,
           'Incoming Quin call',
-          'A visitor wants to talk to you about your vehicle.',
+          `Reason: ${reason || 'Not specified'}`,
           {
             type: 'call',
             session_id: sessionId,
             channel_name: channelName,
-            agora_token: token,
-            agora_app_id: appId,
-            agora_uid: String(uid),
             qr_id: qrId,
+            vehicle_number: String(vehicle.vehicle_number || ''),
+            reason: String(reason || ''),
+            agora_token: ownerCreds.token,
+            agora_app_id: ownerCreds.appId,
+            agora_uid: String(ownerCreds.uid),
           }
         );
       } catch (notifyErr) {
@@ -97,10 +102,10 @@ const startCall = async (req, res, next) => {
     return res.status(201).json({
       session_id: sessionId,
       channel_name: channelName,
-      agora_token: token,
-      agora_app_id: appId,
-      agora_uid: uid,
-      expires_at: expiresAt,
+      agora_token: visitorCreds.token,
+      agora_app_id: visitorCreds.appId,
+      agora_uid: visitorCreds.uid,
+      expires_at: visitorCreds.expiresAt,
       max_duration_seconds: CALL_DURATION_SECONDS,
     });
   } catch (err) {
