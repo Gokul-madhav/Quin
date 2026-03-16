@@ -3,7 +3,7 @@ const { getDb } = require('./firebaseService');
 
 const QR_PREFIX = 'QN';
 const QR_PAD_LENGTH = 6;
-const QR_BASE_URL = 'https://quin.app/v';
+const QR_BASE_URL = 'https://quin-eight.vercel.app/v';
 
 /**
  * Atomically increments a simple numeric counter at `meta/qr_counter`
