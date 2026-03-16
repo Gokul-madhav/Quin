@@ -412,7 +412,7 @@ function renderVisitorPage(qrId) {
             reason,
             message: messageInput.value || '',
             visitor_id: null,
-            last4: last4Input.value.trim().toUpperCase(),
+            // last4 is only used client-side; do NOT send to API
           });
           setStatus('Message sent to the vehicle owner.', 'success');
         } catch (err) {
@@ -463,7 +463,7 @@ function renderVisitorPage(qrId) {
             qr_id: qrId,
             reason,
             visitor_id: null,
-            last4: last4Input.value.trim().toUpperCase(),
+            // last4 stays on the frontend only
           });
           window.__quin_inCall = true;
           updateButtons();
