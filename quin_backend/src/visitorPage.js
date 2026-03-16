@@ -210,6 +210,17 @@ function renderVisitorPage(qrId) {
       color: var(--text-muted);
       margin-top: 2px;
     }
+    .two-col {
+      display: grid;
+      grid-template-columns: 1.3fr 1fr;
+      gap: 8px;
+      align-items: end;
+    }
+    .inline-input {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
   </style>
 </head>
 <body>
@@ -239,21 +250,28 @@ function renderVisitorPage(qrId) {
 
     <section class="section">
       <h2>Why do you want to contact the owner?</h2>
-      <div style="margin-top:6px;">
-        <label for="reason">Select a reason</label>
-        <select id="reason">
-          <option value="">Choose a reason…</option>
-          <option>Vehicle blocking road</option>
-          <option>Wrong parking</option>
-          <option>Accident or damage</option>
-          <option>Security alert</option>
-          <option>Other</option>
-        </select>
+      <div style="margin-top:6px;" class="two-col">
+        <div class="inline-input">
+          <label for="reason">Select a reason</label>
+          <select id="reason">
+            <option value="">Choose a reason…</option>
+            <option>Vehicle blocking road</option>
+            <option>Wrong parking</option>
+            <option>Accident or damage</option>
+            <option>Security alert</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="inline-input">
+          <label for="last4">Last 4 of vehicle number</label>
+          <input id="last4" type="text" maxlength="4" pattern="[A-Za-z0-9]{4}" placeholder="••••" style="width:100%;border-radius:10px;border:1px solid var(--border);background:rgba(10,10,14,0.9);color:var(--text);padding:8px 10px;font-size:0.85rem;outline:none;" />
+        </div>
       </div>
+      <div style="margin-top:4px;" class="helper">You must enter the correct last 4 characters of the plate before you can call or message.</div>
       <div style="margin-top:8px;">
         <label for="message">Optional message</label>
         <textarea id="message" maxlength="2000" placeholder="Add details that help the owner understand the situation."></textarea>
-        <p class="helper">Your reason is required before you can message or call the owner.</p>
+        <p class="helper">Reason and last 4 digits are required before you can message or call the owner.</p>
       </div>
       <div class="actions">
         <button id="message-btn" class="btn-secondary" disabled>Send message</button>
@@ -271,27 +289,37 @@ function renderVisitorPage(qrId) {
     (function() {
       const qrId = ${JSON.stringify(qrId)};
       const reasonSelect = document.getElementById('reason');
+      const last4Input = document.getElementById('last4');
       const messageInput = document.getElementById('message');
       const messageBtn = document.getElementById('message-btn');
       const callBtn = document.getElementById('call-btn');
       const endCallBtn = document.getElementById('end-call-btn');
       const statusEl = document.getElementById('status');
+      let serverLast4 = null;
 
       function setStatus(text, kind) {
         statusEl.textContent = text || '';
         statusEl.className = 'status' + (kind ? ' ' + kind : '');
       }
 
+      function hasValidLast4() {
+        const val = (last4Input.value || '').trim();
+        return val.length === 4 && /^[A-Za-z0-9]{4}$/.test(val);
+      }
+
       function updateButtons() {
         const hasReason = !!reasonSelect.value;
-        messageBtn.disabled = !hasReason;
+        const last4Ok = hasValidLast4();
+        const canContact = hasReason && last4Ok;
+        messageBtn.disabled = !canContact;
         if (!window.__quin_inCall) {
-          callBtn.disabled = !hasReason;
+          callBtn.disabled = !canContact;
         }
         endCallBtn.disabled = !window.__quin_inCall;
       }
 
       reasonSelect.addEventListener('change', updateButtons);
+      last4Input.addEventListener('input', updateButtons);
 
       async function fetchVehicle() {
         const loadingEl = document.getElementById('vehicle-loading');
@@ -309,8 +337,12 @@ function renderVisitorPage(qrId) {
           const fullNumber = data.vehicle_number || 'Vehicle';
           const blurred = fullNumber.replace(/(.+)(.{4})$/, (m, head, tail) => {
             if (head.length <= 0) return '****';
+            serverLast4 = tail.toUpperCase();
             return head + '****';
           });
+          if (!serverLast4 && fullNumber.length >= 4) {
+            serverLast4 = fullNumber.slice(-4).toUpperCase();
+          }
           document.getElementById('vehicle-number').textContent = blurred;
 
           const ownerNameEl = document.getElementById('owner-name');
@@ -368,6 +400,10 @@ function renderVisitorPage(qrId) {
           setStatus('Please choose a reason first.', 'error');
           return;
         }
+        if (!hasValidLast4() || !serverLast4 || last4Input.value.trim().toUpperCase() !== serverLast4) {
+          setStatus('The last 4 characters of the plate do not match.', 'error');
+          return;
+        }
         setStatus('Sending message…');
         messageBtn.disabled = true;
         try {
@@ -375,7 +411,8 @@ function renderVisitorPage(qrId) {
             qr_id: qrId,
             reason,
             message: messageInput.value || '',
-            visitor_id: null
+            visitor_id: null,
+            last4: last4Input.value.trim().toUpperCase(),
           });
           setStatus('Message sent to the vehicle owner.', 'success');
         } catch (err) {
@@ -415,13 +452,18 @@ function renderVisitorPage(qrId) {
           setStatus('Please choose a reason first.', 'error');
           return;
         }
+        if (!hasValidLast4() || !serverLast4 || last4Input.value.trim().toUpperCase() !== serverLast4) {
+          setStatus('The last 4 characters of the plate do not match.', 'error');
+          return;
+        }
         setStatus('Starting call session…');
         callBtn.disabled = true;
         try {
           const data = await postJson('/api/call/start', {
             qr_id: qrId,
             reason,
-            visitor_id: null
+            visitor_id: null,
+            last4: last4Input.value.trim().toUpperCase(),
           });
           window.__quin_inCall = true;
           updateButtons();
